@@ -54,6 +54,7 @@ Telegram uses HTML parsing with `<b>`, `<code>`, `<pre>`, `<a>` tags.
 
 **feishu-notify.js:**
 - `notifyTaskCompletion(taskInfo, webhookUrl, projectName, options)` - Main function
+- `options.title` - Custom title (overrides default "项目名: 任务信息")
 - `options.startTime` - Task start time (Date/timestamp/ISO string) for duration calculation
 - `options.tokens` - Token usage: `{ input, output, total, cacheRead, cacheWrite }`
 - `options.status` - "success" | "error" | "warning"
@@ -61,6 +62,7 @@ Telegram uses HTML parsing with `<b>`, `<code>`, `<pre>`, `<a>` tags.
 
 **telegram-notify.js:**
 - Similar interface with HTML message formatting
+- `options.title` - Custom title (overrides default "项目名: 任务信息")
 
 ### Git Integration
 
@@ -79,6 +81,7 @@ node setup-wizard.js
 
 # Test notification system
 node notify-system.js --message "测试消息"
+node notify-system.js --title "自定义标题" --message "测试消息"
 
 # Test specific notifiers
 node feishu-notify.js --message "测试" --status success --description "描述"
@@ -95,17 +98,44 @@ Add to `~/.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "Stop": [{
-      "hooks": [{
-        "type": "command",
-        "command": "node /path/to/ccdd/notify-system.js --message 'Claude Code 任务已完成'"
-      }]
-    }]
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "node /path/to/ccdd/notify-system.js",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /path/to/ccdd/notify-system.js --title 'Claude Code' --message '需要权限审批'"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /path/to/ccdd/notify-system.js --title 'Claude Code' --message '等待你的输入'"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-The hook triggers on task completion. The system automatically detects the project name from wherever Claude Code is running.
+- **Stop hook**: Triggers on task completion
+- **Notification hook**: Triggers for permission prompts (`permission_prompt`) and idle prompts (`idle_prompt`)
+- The system automatically detects project name from wherever Claude Code is running
+- Use `--title` to override default title (default: "项目名: 任务信息")
 
 ## Important Implementation Notes
 
@@ -119,4 +149,4 @@ The hook triggers on task completion. The system automatically detects the proje
 
 5. **Proxy Support**: Telegram notifier respects `HTTP_PROXY` and `HTTPS_PROXY` environment variables for restricted network environments.
 
-6. **Title Optimization for Wearables**: Project name is placed at the start of titles for small-screen display on smart bands.
+6. **Title Override**: Use `--title` parameter to customize the notification title instead of the default "项目名: 任务信息" format. This is useful for hook scenarios like permission prompts.

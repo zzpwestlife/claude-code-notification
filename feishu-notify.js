@@ -291,6 +291,7 @@ function formatDuration(milliseconds) {
  * @param {string} webhookUrl - 飞书webhook地址
  * @param {string} projectName - 项目名称
  * @param {Object} options - 额外选项
+ * @param {string} options.title - 自定义标题（覆盖默认的"项目名: 任务信息"）
  * @param {string} options.status - 任务状态 (success/error/warning)
  * @param {string} options.description - 任务详细描述
  * @param {Date|number|string} options.startTime - 任务开始时间（Date对象、时间戳或ISO字符串）
@@ -342,11 +343,22 @@ async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", we
     // 状态图标
     const statusIcon = options.status === 'error' ? '❌' : options.status === 'warning' ? '⚠️' : '✅';
 
-    // 项目名放在title最前面，适配手环显示
-    const title = `${actualProjectName}: ${taskInfo}`;
+    // 使用自定义标题或默认的"项目名: 任务信息"
+    const title = options.title || `${actualProjectName}: ${taskInfo}`;
 
     // 构建富文本内容
-    let content = `${statusIcon} 状态: ${options.status === 'error' ? '失败' : options.status === 'warning' ? '警告' : '成功'}
+    const rawPrompt = options.promptSummary || options.prompt || null;
+    const normalizedPrompt = rawPrompt ? String(rawPrompt).replace(/\s+/g, ' ').trim() : null;
+    const shortPrompt = normalizedPrompt ? (normalizedPrompt.length > 120 ? (normalizedPrompt.slice(0, 117) + '...') : normalizedPrompt) : null;
+    let content = `🎯 任务: ${taskInfo}`;
+    if (shortPrompt) {
+        content += `
+
+🧩 提示词摘要: ${shortPrompt}`;
+    }
+    content += `
+
+${statusIcon} 状态: ${options.status === 'error' ? '失败' : options.status === 'warning' ? '警告' : '成功'}
 
 ⏰ 完成时间: ${timestamp}`;
 
@@ -467,7 +479,8 @@ if (require.main === module) {
     // 构建选项对象
     const options = {
         status: cliArgs.status || cliArgs.s || "success",
-        description: cliArgs.description || cliArgs.desc || cliArgs.d || ""
+        description: cliArgs.description || cliArgs.desc || cliArgs.d || "",
+        promptSummary: cliArgs.promptSummary || cliArgs.prompt || ""
     };
 
     // 处理开始时间

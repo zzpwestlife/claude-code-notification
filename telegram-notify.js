@@ -229,9 +229,11 @@ class TelegramNotifier {
  * 任务完成通知函数
  * @param {string} taskInfo - 任务信息
  * @param {string} projectName - 项目名称
+ * @param {Object} options - 额外选项
+ * @param {string} options.title - 自定义标题（覆盖默认的"项目名: 任务信息"）
  * @returns {Promise<boolean>} 发送是否成功
  */
-async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", projectName = "") {
+async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", projectName = "", options = {}) {
     const notifier = new TelegramNotifier();
 
     if (!notifier.enabled) {
@@ -251,8 +253,8 @@ async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", pr
         hour12: false
     });
 
-    // 项目名放在最前面，适配显示
-    const title = projectName ? `${projectName}: ${taskInfo}` : taskInfo;
+    // 使用自定义标题或默认的"项目名: 任务信息"
+    const title = options.title || (projectName ? `${projectName}: ${taskInfo}` : taskInfo);
 
     const message = `🤖 <b>${title}</b>
 

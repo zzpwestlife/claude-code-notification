@@ -186,14 +186,14 @@ class NotificationSystem {
     /**
      * 发送所有类型的通知
      */
-    async sendAllNotifications(taskInfo = "Claude Code 任务已完成") {
+    async sendAllNotifications(taskInfo = "Claude Code 任务已完成", title = null) {
         const icons = this.notificationManager.getEnabledNotificationIcons();
         console.log(`🚀 开始发送任务完成通知... ${icons}`);
         console.log(`📁 项目名称：${this.projectName}`);
         console.log(`📝 任务信息：${taskInfo}`);
 
         // 发送所有通知
-        const results = await this.notificationManager.sendAllNotifications(taskInfo);
+        const results = await this.notificationManager.sendAllNotifications(taskInfo, title);
 
         // 添加声音通知
         if (this.config.notification.sound.enabled) {
@@ -238,9 +238,10 @@ function getCommandLineArgs() {
 if (require.main === module) {
     const options = getCommandLineArgs();
     const taskInfo = options.message || options.task || "Claude Code 任务已完成";
+    const title = options.title || null;
 
     const notifier = new NotificationSystem();
-    notifier.sendAllNotifications(taskInfo);
+    notifier.sendAllNotifications(taskInfo, title);
 }
 
 module.exports = {

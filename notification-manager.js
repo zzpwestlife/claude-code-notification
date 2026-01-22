@@ -27,9 +27,9 @@ class NotificationManager {
             notifiers.feishu = {
                 enabled: true,
                 notifier: new FeishuNotifier(this.config.notification.feishu.webhook_url),
-                send: async (taskInfo) => {
+                send: async (taskInfo, title) => {
                     const { notifyTaskCompletion } = require('./feishu-notify');
-                    return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName);
+                    return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName, { title });
                 }
             };
         }
@@ -39,9 +39,9 @@ class NotificationManager {
             notifiers.telegram = {
                 enabled: true,
                 notifier: new TelegramNotifier(),
-                send: async (taskInfo) => {
+                send: async (taskInfo, title) => {
                     const { notifyTaskCompletion } = require('./telegram-notify');
-                    return await notifyTaskCompletion(taskInfo, this.projectName);
+                    return await notifyTaskCompletion(taskInfo, this.projectName, { title });
                 }
             };
         }
@@ -52,7 +52,7 @@ class NotificationManager {
     /**
      * 发送所有启用的通知
      */
-    async sendAllNotifications(taskInfo) {
+    async sendAllNotifications(taskInfo, title = null) {
         const notifications = [];
         const results = [];
 
@@ -60,7 +60,7 @@ class NotificationManager {
         for (const [type, notifierConfig] of Object.entries(this.notifiers)) {
             if (notifierConfig.enabled) {
                 notifications.push(
-                    this.sendSingleNotification(type, notifierConfig, taskInfo)
+                    this.sendSingleNotification(type, notifierConfig, taskInfo, title)
                 );
             }
         }
@@ -77,9 +77,9 @@ class NotificationManager {
     /**
      * 发送单个通知
      */
-    async sendSingleNotification(type, notifierConfig, taskInfo) {
+    async sendSingleNotification(type, notifierConfig, taskInfo, title) {
         try {
-            const success = await notifierConfig.send(taskInfo);
+            const success = await notifierConfig.send(taskInfo, title);
             const typeName = this.getTypeName(type);
             console.log(success ? `✅ ${typeName}发送成功` : `❌ ${typeName}发送失败`);
             return { type, success };
