@@ -31,7 +31,20 @@ claude-code-notification/
 
 ### ⚡ 快速开始（推荐方式）
 
-#### 使用配置向导 🧙‍♂️（推荐）
+下载项目, 从 github 克隆到本地
+
+```bash
+git clone https://github.com/yourusername/claude-code-notification.git
+cd claude-code-notification
+```
+执行安装, npm 安装依赖
+
+```bash
+npm install
+```
+
+运行配置向导
+
 ```bash
 node setup-wizard.js
 ```
@@ -45,29 +58,6 @@ node notify-system.js --message "测试消息"
 
 #### 步骤 3：重启 Claude Code 🔄
 重启 Claude Code 使配置生效，然后正常使用即可！
-
-### 📋 配置说明
-
-#### 环境变量配置（推荐方式）
-`.env` 文件支持以下配置：
-
-```bash
-# 飞书Webhook地址
-FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/你的地址
-```
-
-#### 配置文件方式（可选）
-`config.json` 仍然支持传统配置方式，环境变量会覆盖配置文件设置。
-
-```json
-{
-  "notification": {
-    "feishu": {
-      "enabled": true
-    }
-  }
-}
-```
 
 ### 🔧 Claude Code Hook 配置
 
@@ -120,23 +110,3 @@ FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/你的地址
 ## 🎯 使用效果
 
 配置完成后，当 Claude Code 完成任务时，你的飞书 APP 会收到任务完成消息。
-
-## 🔧 技术实现
-
-### 架构设计
-- **分层架构**：env-config → notification-manager → notify-system
-- **模块化设计**：独立开发和测试
-- **统一接口**：通过 NotificationManager 统一管理所有通知
-- **环境变量优先**：支持.env 安全配置，保护敏感信息
-
-### 安全特性
-- 🔒 **环境变量保护**：敏感信息存储在.env 文件中，已加入.gitignore
-- 🔐 **配置隔离**：敏感配置与代码分离，防止意外泄露
-- 🛡️ **模板化配置**：提供.env.example 模板，便于团队协作
-
-### 核心模块
-- **notify-system.js**：主通知系统，协调通知
-- **notification-manager.js**：通知管理器，统一管理通知接口
-- **env-config.js**：环境变量配置管理，统一处理环境变量加载
-- **feishu-notify.js**：飞书 API 调用模块，支持富文本消息
-- **config.json**：传统的配置文件管理（可选）
