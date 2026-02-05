@@ -112,41 +112,52 @@ SOUND_ENABLED=true          # 是否启用声音提醒
 
 ### 🔧 Claude Code Hook 配置
 
-在 `~/.claude/settings.json` 中配置 hook，任务完成时自动发送通知：
+在 `~/.claude/config.json` 中配置 hook，实现全自动化通知：
 
-**推荐配置（使用统一通知系统）**：
 ```json
 {
   "hooks": {
-    "Stop": [{
-      "hooks": [{
-        "type": "command",
-        "command": "node /projects/ccdd/notify-system.js --message 'Claude Code 任务已完成'"
-      }]
-    }]
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "node /absolute/path/to/claude-code-notification/notify-system.js",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /absolute/path/to/claude-code-notification/notify-system.js --title 'Claude Code' --message '需要权限审批'"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /absolute/path/to/claude-code-notification/notify-system.js --title 'Claude Code' --message '等待你的输入'"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**高级配置（自定义消息）**：
-```json
-{
-  "hooks": {
-    "Stop": [{
-      "hooks": [{
-        "type": "command",
-        "command": "node /projects/ccdd/notify-system.js --message '代码优化完成'"
-      }]
-    }]
-  }
-}
-```
+**⚠️ 注意**：请将 `/absolute/path/to/claude-code-notification/` 替换为你实际的项目绝对路径。
 
-该配置会：
-- ✅ 自动识别项目名称并显示在通知标题
-- 📱 发送飞书通知（如果配置了）
-- 📲 发送 Telegram 通知（如果配置了）
-- 🔊 播放声音提醒
+该配置实现：
+- ✅ **任务完成**：自动发送通知并震动
+- ✅ **权限请求**：当 Claude 需要确认执行命令时通知你
+- ✅ **等待输入**：当 Claude 等待你下一步指示时通知你
+
 - ⌚ 触发手环震动
 
 ## 🎯 使用效果
