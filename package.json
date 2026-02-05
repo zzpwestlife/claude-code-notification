@@ -1,13 +1,26 @@
 {
   "name": "claude-code-notification",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "这是一个智能提醒系统，用于在Claude Code完成任务时通过飞书提醒你。",
-  "main": "feishu-notify.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "src/index.js",
+  "bin": {
+    "claude-notify": "src/index.js"
   },
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "start": "bash scripts/dev.sh",
+    "setup": "bash scripts/setup.sh",
+    "test": "bash scripts/test.sh",
+    "lint": "bash scripts/lint.sh",
+    "clean": "bash scripts/clean.sh",
+    "build": "bash scripts/build.sh"
+  },
+  "keywords": [
+    "claude",
+    "notification",
+    "feishu",
+    "lark"
+  ],
+  "author": "Joey Zou",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

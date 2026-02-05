@@ -56,7 +56,7 @@ async function setupWizard() {
 
     try {
         // 读取现有配置
-        const configPath = path.join(__dirname, 'config.json');
+        const configPath = path.join(__dirname, '../../config/config.json');
         let config;
 
         try {
@@ -88,10 +88,15 @@ async function setupWizard() {
         delete config.notification.sound;
 
         // 保存配置文件
+        // 确保 config 目录存在
+        const configDir = path.dirname(configPath);
+        if (!fs.existsSync(configDir)) {
+            fs.mkdirSync(configDir, { recursive: true });
+        }
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
 
         // 创建.env文件
-        const envPath = path.join(__dirname, '.env');
+        const envPath = path.join(process.cwd(), '.env');
         const envContent = `# 飞书Webhook配置
 FEISHU_WEBHOOK_URL=${webhookUrl}
 `;

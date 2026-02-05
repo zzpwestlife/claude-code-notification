@@ -3,7 +3,7 @@
  * 统一管理各种通知方式
  */
 
-const { FeishuNotifier } = require('./feishu-notify');
+const { FeishuNotifier } = require('../feishu/client');
 
 /**
  * 通知管理器类
@@ -27,7 +27,7 @@ class NotificationManager {
                 enabled: true,
                 notifier: new FeishuNotifier(this.config.notification.feishu.webhook_url),
                 send: async (taskInfo, title) => {
-                    const { notifyTaskCompletion } = require('./feishu-notify');
+                    const { notifyTaskCompletion } = require('../feishu/client');
                     return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName, { title });
                 }
             };

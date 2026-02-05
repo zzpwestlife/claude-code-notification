@@ -5,8 +5,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { envConfig } = require('./env-config');
-const { NotificationManager } = require('./notification-manager');
+const { envConfig } = require('./shared/config/env');
+const { NotificationManager } = require('./modules/notification/manager');
 
 /**
  * 通知系统管理器
@@ -23,7 +23,7 @@ class NotificationSystem {
      */
     loadConfig() {
         try {
-            const configPath = path.join(__dirname, 'config.json');
+            const configPath = path.join(__dirname, '../config/config.json');
             const configData = fs.readFileSync(configPath, 'utf8');
             const config = JSON.parse(configData);
 
