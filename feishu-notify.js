@@ -350,17 +350,13 @@ async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", we
     const rawPrompt = options.promptSummary || options.prompt || null;
     const normalizedPrompt = rawPrompt ? String(rawPrompt).replace(/\s+/g, ' ').trim() : null;
     const shortPrompt = normalizedPrompt ? (normalizedPrompt.length > 120 ? (normalizedPrompt.slice(0, 117) + '...') : normalizedPrompt) : null;
-    let content = `🎯 任务: ${taskInfo}`;
+    let content = ``;
     if (shortPrompt) {
-        content += `
+        content += `🧩 提示词摘要: ${shortPrompt}
 
-🧩 提示词摘要: ${shortPrompt}`;
+`;
     }
-    content += `
-
-${statusIcon} 状态: ${options.status === 'error' ? '失败' : options.status === 'warning' ? '警告' : '成功'}
-
-⏰ 完成时间: ${timestamp}`;
+    content += `⏰ 完成时间: ${timestamp}`;
 
     // 添加开始时间和时长
     if (startTimeStr) {
@@ -405,10 +401,7 @@ ${options.description}`;
         content += `
 
 🔧 仓库信息:
-• 分支: ${gitInfo.branch}
-• 提交: ${gitInfo.commitHash} - ${gitInfo.commitMessage}
-• 作者: ${gitInfo.commitAuthor}
-• 日期: ${gitInfo.commitTime}`;
+• 分支: ${gitInfo.branch}`;
 
         if (gitInfo.status) {
             content += `
@@ -425,11 +418,6 @@ ${options.description}`;
     content += `
 
 💻 环境: ${os.type()} ${os.release()}`;
-
-    // 添加查看提示
-    content += `
-
-💡 可以查看执行结果了！`;
 
     try {
         // 发送富文本消息

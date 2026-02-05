@@ -4,7 +4,6 @@
  */
 
 const { FeishuNotifier } = require('./feishu-notify');
-const { TelegramNotifier } = require('./telegram-notify');
 
 /**
  * 通知管理器类
@@ -23,25 +22,13 @@ class NotificationManager {
         const notifiers = {};
 
         // 飞书通知器
-        if (this.config.notification.feishu.enabled) {
+        if (this.config.notification && this.config.notification.feishu && this.config.notification.feishu.enabled) {
             notifiers.feishu = {
                 enabled: true,
                 notifier: new FeishuNotifier(this.config.notification.feishu.webhook_url),
                 send: async (taskInfo, title) => {
                     const { notifyTaskCompletion } = require('./feishu-notify');
                     return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName, { title });
-                }
-            };
-        }
-
-        // Telegram通知器
-        if (this.config.notification.telegram && this.config.notification.telegram.enabled) {
-            notifiers.telegram = {
-                enabled: true,
-                notifier: new TelegramNotifier(),
-                send: async (taskInfo, title) => {
-                    const { notifyTaskCompletion } = require('./telegram-notify');
-                    return await notifyTaskCompletion(taskInfo, this.projectName, { title });
                 }
             };
         }
@@ -95,9 +82,7 @@ class NotificationManager {
      */
     getTypeName(type) {
         const typeNames = {
-            feishu: '飞书通知',
-            telegram: 'Telegram通知',
-            sound: '声音提醒'
+            feishu: '飞书通知'
         };
         return typeNames[type] || type;
     }
@@ -114,7 +99,7 @@ class NotificationManager {
             const typeName = this.getTypeName(type);
             const result = results[index];
             const status = result && result.value && result.value.success ? '✅ 成功' : '❌ 失败';
-            const icon = type === 'feishu' ? '📱' : type === 'telegram' ? '📲' : '🔊';
+            const icon = '📱';
             console.log(`  ${icon} ${typeName}：${status}`);
         });
 
@@ -122,10 +107,6 @@ class NotificationManager {
         console.log('🎯 提醒效果：');
         if (this.notifiers.feishu) {
             console.log('  📱 手机将收到飞书通知');
-            console.log('  ⌚ 小米手环会震动提醒');
-        }
-        if (this.notifiers.telegram) {
-            console.log('  📲 Telegram将收到推送通知');
         }
         console.log('');
     }
@@ -136,7 +117,6 @@ class NotificationManager {
     getEnabledNotificationIcons() {
         const icons = [];
         if (this.notifiers.feishu) icons.push('📱');
-        if (this.notifiers.telegram) icons.push('📲');
         return icons.join(' ');
     }
 }

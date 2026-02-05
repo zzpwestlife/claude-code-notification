@@ -24,24 +24,13 @@ function question(query) {
  * 配置向导主函数
  */
 async function setupWizard() {
-    console.log('🚀 Claude Code 手环震动提醒系统 - 配置向导');
+    console.log('🚀 Claude Code 任务提醒系统 - 配置向导');
     console.log('=' .repeat(50));
     console.log('');
 
-    console.log('📋 这个向导将帮助您配置飞书webhook，让Claude Code完成任务时能够通过手环震动提醒您。');
+    console.log('📋 这个向导将帮助您配置飞书webhook，让Claude Code完成任务时能够通知您。');
     console.log('');
 
-    // 询问是否需要配置飞书
-    const setupFeishu = await question('❓ 是否需要配置飞书通知？(y/n): ');
-
-    if (setupFeishu.toLowerCase() !== 'y' && setupFeishu.toLowerCase() !== 'yes') {
-        console.log('ℹ️  跳过飞书配置，您将只使用声音提醒。');
-        console.log('🔧 稍后可以通过编辑 config.json 来启用飞书通知。');
-        rl.close();
-        return;
-    }
-
-    console.log('');
     console.log('📱 飞书Webhook配置步骤：');
     console.log('1. 📲 在飞书中创建一个群组（可以只包含你自己）');
     console.log('2. ⚙️  进入群组设置 > 群机器人 > 添加机器人');
@@ -77,21 +66,26 @@ async function setupWizard() {
             console.log('📝 创建新的配置文件...');
             config = {
                 notification: {
-                    type: 'feishu',
-                    feishu: { enabled: true, webhook_url: '' },
-                    sound: { enabled: true, backup: true }
+                    feishu: { enabled: true, webhook_url: '' }
                 },
                 app: {
                     name: 'Claude Code 任务完成提醒',
                     version: '1.1.0',
-                    description: '支持飞书通知和手环震动的任务完成提醒系统'
+                    description: '支持飞书通知的任务完成提醒系统'
                 }
             };
         }
 
         // 更新配置
+        if (!config.notification) config.notification = {};
+        if (!config.notification.feishu) config.notification.feishu = { enabled: true };
+        
         config.notification.feishu.webhook_url = webhookUrl;
         config.notification.feishu.enabled = true;
+        
+        // 移除旧配置
+        delete config.notification.telegram;
+        delete config.notification.sound;
 
         // 保存配置文件
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
@@ -100,13 +94,9 @@ async function setupWizard() {
         const envPath = path.join(__dirname, '.env');
         const envContent = `# 飞书Webhook配置
 FEISHU_WEBHOOK_URL=${webhookUrl}
-
-# 通知配置
-NOTIFICATION_ENABLED=true
-SOUND_ENABLED=true
 `;
 
-        fs.writeFileSync(envPath, envContent, 'utf8');
+        fs.writeFileSync(envPath, envContent, { encoding: 'utf8', mode: 0o600 });
 
         console.log('✅ 配置已保存到 config.json');
         console.log('✅ 环境变量已保存到 .env 文件');
@@ -120,7 +110,6 @@ SOUND_ENABLED=true
         if (success) {
             console.log('🎉 飞书通知测试成功！');
             console.log('📱 您的飞书应该已收到测试消息');
-            console.log('⌚ 如果手环已连接，应该会感到震动');
         } else {
             console.log('❌ 飞书通知测试失败，请检查：');
             console.log('   1. webhook地址是否正确');
@@ -132,7 +121,7 @@ SOUND_ENABLED=true
         console.log('🎯 配置完成！现在您可以：');
         console.log('   1. 重启Claude Code');
         console.log('   2. 正常使用Claude Code执行任务');
-        console.log('   3. 任务完成时会自动收到通知和手环震动');
+        console.log('   3. 任务完成时会自动收到通知');
 
     } catch (error) {
         console.log('❌ 配置过程中发生错误:', error.message);
