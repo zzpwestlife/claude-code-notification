@@ -221,6 +221,7 @@ class FeishuNotifier {
                 hostname: url.hostname,
                 path: url.pathname + url.search,
                 method: 'POST',
+                timeout: 10000, // 10秒超时
                 headers: {
                     'Content-Type': 'application/json',
                     'Content-Length': Buffer.byteLength(data)
@@ -255,6 +256,12 @@ class FeishuNotifier {
 
             req.on('error', (error) => {
                 console.error('❌ 发送飞书请求失败:', error.message);
+                resolve(false);
+            });
+
+            req.on('timeout', () => {
+                req.destroy();
+                console.error('❌ 发送飞书请求超时 (10s)');
                 resolve(false);
             });
 
@@ -311,6 +318,11 @@ async function notifyTaskCompletion(taskInfo = "Claude Code 任务已完成", we
         console.log('3. 复制webhook地址');
         console.log('4. 设置环境变量 FEISHU_WEBHOOK_URL 或修改脚本中的地址');
         return false;
+    }
+
+    // 安全检查：验证Webhook URL格式
+    if (!FEISHU_WEBHOOK_URL.startsWith('https://open.feishu.cn/') && !FEISHU_WEBHOOK_URL.startsWith('https://www.feishu.cn/')) {
+        console.warn('⚠️  警告: Webhook URL 不是官方飞书域名，请确保该地址安全可信。');
     }
 
     const notifier = new FeishuNotifier(FEISHU_WEBHOOK_URL);
