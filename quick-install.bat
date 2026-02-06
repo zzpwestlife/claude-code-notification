@@ -175,7 +175,9 @@ try {
     } else {
         Log-Write "正在更新仓库..."
         Set-Location $TargetDir
+        git stash
         git pull
+        git stash pop
     }
 
     Set-Location $TargetDir

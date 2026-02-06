@@ -201,11 +201,13 @@ download_package() {
         if [ -d "$INSTALL_DIR/.git" ]; then
             log "INFO" "正在更新现有仓库..."
             cd "$INSTALL_DIR"
+            # Stash any local changes to ensure clean pull
+            git stash >/dev/null 2>&1
             git pull
+            # Try to pop stash (ignore errors if no stash or conflict)
+            git stash pop >/dev/null 2>&1 || true
         else
-            log "ERROR" "目标目录已存在且不是 git 仓库。为防止数据丢失，已终止。"
-            show_msg "错误" "目录 $INSTALL_DIR 已存在且不是 git 仓库。"
-            exit 1
+            log "WARN" "目录存在但不是 Git 仓库。正在跳过 git 更新。"
         fi
     else
         log "INFO" "正在克隆仓库..."
