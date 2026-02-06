@@ -1,20 +1,10 @@
 # Claude Code 任务完成提醒系统
 
-这是一个智能提醒系统，用于在 Claude Code 完成任务时通过飞书提醒你，让你可以不用频繁检查任务状态。
-
-## 🎯 功能特点
-
-- ✅ **飞书通知推送**：任务完成时自动发送飞书消息到手机
-- ✅ **智能项目识别**：自动识别项目名称（package.json > git 仓库名 > 目录名）
-- ✅ **精简消息格式**：项目名：任务信息，适配移动端显示
-- ✅ **配置灵活**：支持环境变量和配置文件
-- ✅ **安全可靠**：使用官方 API，安全稳定
+本文档旨在帮助开发者在新设备上快速完成飞书通知的接入。
 
 ## 📁 项目结构
 
-详细的项目结构请参考 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)。
-
-```
+```sh
 claude-code-notification/
 ├── assets/                  # 静态资源
 ├── config/                  # 配置文件
@@ -27,6 +17,12 @@ claude-code-notification/
 └── README.md                # 项目说明
 ```
 
+## 系统要求
+- **操作系统**: macOS (推荐), Linux, Windows 10/11
+- **Node.js**: v14.0.0 或更高版本
+- **Git**: 最新版本
+
+
 ## 🛠 安装和配置
 
 ### 🚀 一键安装（最推荐）
@@ -35,7 +31,7 @@ claude-code-notification/
 
 **Linux / macOS:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/joeyzou/claude-code-notification/main/quick-install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zzpwestlife/claude-code-notification/main/quick-install.sh | bash
 ```
 
 **Windows (PowerShell):**
@@ -43,35 +39,6 @@ curl -sSL https://raw.githubusercontent.com/joeyzou/claude-code-notification/mai
 ```powershell
 & {Start-Process PowerShell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "quick-install.bat"' -Verb RunAs}
 ```
-
-**支持环境：**
-- **macOS**: 支持 TUI 弹窗 (osascript)，无需额外依赖。
-- **Linux**: 依赖 `whiptail` 或 `dialog` (Ubuntu/Debian 自带或 `apt install whiptail`)。
-- **Windows**: 需要 PowerShell 5.1+ (Windows 10/11 自带)。
-- **Node.js**: 需要 Node.js 14+。
-
----
-
-### ⚡ 手动安装（备选方式）
-
-下载项目, 从 github 克隆到本地
-
-```bash
-git clone https://github.com/yourusername/claude-code-notification.git
-cd claude-code-notification
-```
-执行安装, npm 安装依赖
-
-```bash
-npm install
-```
-
-运行配置向导
-
-```bash
-npm run setup
-```
-向导会自动帮你配置所有设置，包括安全存储 webhook 地址。
 
 #### 验证配置 ✅
 ```bash

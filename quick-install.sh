@@ -194,7 +194,6 @@ download_package() {
 
 write_config() {
     local webhook_url="$1"
-    local secret="$2"
     
     log "INFO" "Writing configuration..."
     
@@ -202,7 +201,6 @@ write_config() {
     cat > "$INSTALL_DIR/.env" <<EOL
 # Feishu Webhook Configuration
 FEISHU_WEBHOOK_URL=$webhook_url
-FEISHU_SECRET=$secret
 EOL
 
     # Configure Claude Code Settings
@@ -302,15 +300,13 @@ main() {
     WEBHOOK_URL=$(get_input "Configuration" "Please enter your Feishu Webhook URL:" "" "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" "Invalid Webhook URL! Must start with https://open.feishu.cn/open-apis/bot/v2/hook/")
     if [ -z "$WEBHOOK_URL" ]; then log "WARN" "Cancelled by user"; exit 0; fi
     
-    SECRET=$(get_input "Configuration" "Please enter your Feishu Secret (Optional, leave empty if none):" "" "" "")
-    
     # 2. Install
     show_progress "Installation" "Downloading and installing..." 10
     download_package
     show_progress "Installation" "Dependencies installed." 50
     
     # 3. Configure
-    write_config "$WEBHOOK_URL" "$SECRET"
+    write_config "$WEBHOOK_URL"
     show_progress "Configuration" "Configuration written." 90
     
     # 4. Finish

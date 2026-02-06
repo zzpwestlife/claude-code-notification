@@ -127,8 +127,6 @@ try {
     $WebhookUrl = Get-Input -Title "Configuration" -Prompt "Enter Feishu Webhook URL:" -Regex "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" -ErrorMessage "Invalid URL. Must start with https://open.feishu.cn/open-apis/bot/v2/hook/"
     if ([string]::IsNullOrEmpty($WebhookUrl)) { exit 0 }
 
-    $Secret = Get-Input -Title "Configuration" -Prompt "Enter Feishu Secret (Optional):"
-
     # Installation
     if (-not (Test-Path $TargetDir)) {
         Log-Write "Cloning repository..."
@@ -146,7 +144,7 @@ try {
 
     # Write Config
     Log-Write "Writing configuration..."
-    $EnvContent = "FEISHU_WEBHOOK_URL=$WebhookUrl`r`nFEISHU_SECRET=$Secret"
+    $EnvContent = "FEISHU_WEBHOOK_URL=$WebhookUrl"
     Set-Content -Path "$TargetDir\.env" -Value $EnvContent
 
     # Update Settings
