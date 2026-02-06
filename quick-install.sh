@@ -47,7 +47,7 @@ OS_TYPE=""
 TUI_TOOL=""
 
 detect_os() {
-    log "INFO" "Detecting Operating System..."
+    log "INFO" "正在检测操作系统..."
     local uname_out="$(uname -s)"
     case "${uname_out}" in
         Linux*)     OS_TYPE="Linux";;
@@ -57,11 +57,11 @@ detect_os() {
         MSYS*)      OS_TYPE="Windows";;
         *)          OS_TYPE="Unknown";;
     esac
-    log "INFO" "Detected OS: $OS_TYPE"
+    log "INFO" "检测到操作系统: $OS_TYPE"
 }
 
 check_dependency() {
-    log "INFO" "Checking required tools..."
+    log "INFO" "正在检查必要工具..."
     
     local missing_tools=()
     for tool in git node npm curl; do
@@ -71,8 +71,9 @@ check_dependency() {
     done
 
     if [ ${#missing_tools[@]} -ne 0 ]; then
-        log "ERROR" "Missing required tools: ${missing_tools[*]}"
-        log "INFO" "Please install them and retry."
+        log "ERROR" "缺少必要工具: ${missing_tools[*]}"
+        show_msg "错误" "缺少必要工具: ${missing_tools[*]}
+请安装它们并重试。"
         exit 1
     fi
 
@@ -87,7 +88,7 @@ check_dependency() {
             TUI_TOOL="osascript"
         fi
     fi
-    log "INFO" "Using TUI tool: $TUI_TOOL"
+    log "INFO" "使用 TUI 工具: $TUI_TOOL"
 }
 
 # ==========================================
@@ -126,7 +127,7 @@ get_input() {
 
         # Validation
         if [[ -n "$regex" ]] && [[ ! "$result" =~ $regex ]]; then
-            show_msg "Error" "$error_msg"
+            show_msg "错误" "$error_msg"
         else
             echo "$result"
             return 0
@@ -149,13 +150,38 @@ show_msg() {
     fi
 }
 
+# Select directory with fallback
+get_install_dir() {
+    local default_parent="$1"
+    local selected_dir=""
+
+    if [[ "$TUI_TOOL" == "osascript" ]]; then
+        # Use AppleScript to choose folder
+        # We use a small script to allow choosing a folder
+        selected_dir=$(osascript -e "set selectedFolder to choose folder with prompt \"请选择安装位置 (将在该目录下创建 claude-code-notification 文件夹):\" default location \"$default_parent\"" -e "POSIX path of selectedFolder" 2>/dev/null)
+        
+        if [ $? -ne 0 ] || [ -z "$selected_dir" ]; then 
+            return 1 
+        fi
+    else
+        # Fallback to text input
+        selected_dir=$(get_input "配置" "请输入安装位置的父目录 (将在该目录下创建 claude-code-notification):" "$default_parent" "^/.*" "路径必须是绝对路径")
+        if [ -z "$selected_dir" ]; then return 1; fi
+    fi
+    
+    # Remove trailing slash and append project name
+    selected_dir=${selected_dir%/}
+    echo "$selected_dir/claude-code-notification"
+    return 0
+}
+
 show_progress() {
     local title="$1"
     local msg="$2"
     local percent="$3"
     
     # Simple progress for now as proper gauge is complex across tools
-    log "INFO" "Progress ${percent}%: $msg"
+    log "INFO" "进度 ${percent}%: $msg"
 }
 
 # ==========================================
@@ -164,38 +190,38 @@ show_progress() {
 
 DEFAULT_INSTALL_DIR="$HOME/code/claude-code-notification"
 INSTALL_DIR=""
-REPO_URL="https://github.com/joeyzou/claude-code-notification.git" # Placeholder, user should replace
+REPO_URL="https://github.com/zzpwestlife/claude-code-notification.git" # Placeholder, user should replace
 
 download_package() {
-    log "INFO" "Preparing installation directory..."
+    log "INFO" "正在准备安装目录..."
     
     if [ -d "$INSTALL_DIR" ]; then
-        log "WARN" "Directory exists: $INSTALL_DIR"
+        log "WARN" "目录已存在: $INSTALL_DIR"
         # Ideally ask to update or overwrite, for now just git pull if it's a git repo
         if [ -d "$INSTALL_DIR/.git" ]; then
-            log "INFO" "Updating existing repository..."
+            log "INFO" "正在更新现有仓库..."
             cd "$INSTALL_DIR"
             git pull
         else
-            log "ERROR" "Target directory exists and is not a git repo. Aborting to avoid data loss."
-            show_msg "Error" "Directory $INSTALL_DIR exists and is not a git repo."
+            log "ERROR" "目标目录已存在且不是 git 仓库。为防止数据丢失，已终止。"
+            show_msg "错误" "目录 $INSTALL_DIR 已存在且不是 git 仓库。"
             exit 1
         fi
     else
-        log "INFO" "Cloning repository..."
+        log "INFO" "正在克隆仓库..."
         mkdir -p "$(dirname "$INSTALL_DIR")"
         git clone "$REPO_URL" "$INSTALL_DIR"
         cd "$INSTALL_DIR"
     fi
     
-    log "INFO" "Installing dependencies..."
+    log "INFO" "正在安装依赖..."
     npm install
 }
 
 write_config() {
     local webhook_url="$1"
     
-    log "INFO" "Writing configuration..."
+    log "INFO" "正在写入配置..."
     
     # Write .env
     cat > "$INSTALL_DIR/.env" <<EOL
@@ -204,29 +230,44 @@ FEISHU_WEBHOOK_URL=$webhook_url
 EOL
 
     # Configure Claude Code Settings
-    local claude_settings="$HOME/.claude/settings.json"
+    local claude_dir="$HOME/.claude"
+    local source_settings="$claude_dir/settings.json"
+    local target_settings="$claude_dir/settings.json"
     local node_path=$(which node)
     local notify_script="$INSTALL_DIR/src/index.js"
     
-    log "INFO" "Detected node path: $node_path"
-    
-    if [ ! -f "$claude_settings" ]; then
-        log "WARN" "Claude settings file not found at $claude_settings. Creating new one."
-        mkdir -p "$(dirname "$claude_settings")"
-        echo "{ \"hooks\": {} }" > "$claude_settings"
+    log "INFO" "检测到 node 路径: $node_path"
+
+    # Check for ft-claude-code.json override
+    if [ -f "$claude_dir/ft-claude-code.json" ]; then
+        log "INFO" "发现 ft-claude-code.json。使用它作为基础配置。"
+        source_settings="$claude_dir/ft-claude-code.json"
+        target_settings="$claude_dir/ft-settings.json"
+    elif [ ! -f "$source_settings" ]; then
+        log "WARN" "未在 $source_settings 找到 Claude 配置文件。正在创建新文件。"
+        mkdir -p "$claude_dir"
+        echo "{ \"hooks\": {} }" > "$source_settings"
     fi
 
-    # Backup settings
-    cp "$claude_settings" "${claude_settings}.bak.$(date +%Y%m%d%H%M%S)"
+    # Backup settings if we are modifying in-place
+    if [ "$source_settings" == "$target_settings" ] && [ -f "$target_settings" ]; then
+        cp "$target_settings" "${target_settings}.bak.$(date +%Y%m%d%H%M%S)"
+    fi
     
     # We use a temporary node script to merge the JSON to ensure correctness
     # This avoids complex sed/awk logic for JSON
     
     cat > "$INSTALL_DIR/update_settings.js" <<JS
 const fs = require('fs');
-const path = '${claude_settings}';
+const sourcePath = '${source_settings}';
+const targetPath = '${target_settings}';
+
 try {
-    const settings = JSON.parse(fs.readFileSync(path, 'utf8'));
+    let settings = { hooks: {} };
+    if (fs.existsSync(sourcePath)) {
+        console.log('Reading settings from:', sourcePath);
+        settings = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+    }
     
     if (!settings.hooks) settings.hooks = {};
     
@@ -268,15 +309,15 @@ try {
     );
     settings.hooks.Notification.push(...notificationHooks);
 
-    fs.writeFileSync(path, JSON.stringify(settings, null, 2));
-    console.log('Settings updated successfully');
+    fs.writeFileSync(targetPath, JSON.stringify(settings, null, 2));
+    console.log('Settings updated successfully to:', targetPath);
 } catch (e) {
     console.error('Failed to update settings:', e);
     process.exit(1);
 }
 JS
 
-    log "INFO" "Updating $claude_settings..."
+    log "INFO" "正在更新 Claude 设置..."
     node "$INSTALL_DIR/update_settings.js"
     rm "$INSTALL_DIR/update_settings.js"
 }
@@ -286,32 +327,54 @@ JS
 # ==========================================
 
 main() {
-    log "INFO" "🚀 Starting One-Click Installation..."
+    log "INFO" "🚀 开始一键安装..."
     
     detect_os
     check_dependency
     
     # 1. Collect Input
-    show_msg "Welcome" "Welcome to Claude Code Notification Setup!"
     
-    INSTALL_DIR=$(get_input "Configuration" "Install Directory:" "$DEFAULT_INSTALL_DIR" "^/.*" "Path must be absolute (start with /)")
-    if [ -z "$INSTALL_DIR" ]; then log "WARN" "Cancelled by user"; exit 0; fi
+    # Try to detect clipboard for Webhook
+    local default_webhook=""
+    if [[ "$OS_TYPE" == "macOS" ]] && command -v pbpaste &> /dev/null; then
+        local clipboard_content=$(pbpaste)
+        # Check if clipboard content looks like a Feishu Webhook URL
+        if [[ "$clipboard_content" =~ ^https://open.feishu.cn/open-apis/bot/v2/hook/.*$ ]]; then
+            # If using osascript, show a confirmation dialog with FULL URL
+            if [[ "$TUI_TOOL" == "osascript" ]]; then
+                local choice=$(osascript -e "display dialog \"检测到剪贴板包含飞书 Webhook 地址：\n\n$clipboard_content\n\n是否直接使用？\" with title \"配置\" buttons {\"手动输入\", \"使用此地址\"} default button \"使用此地址\"" -e "button returned of result" 2>/dev/null)
+                if [[ "$choice" == "使用此地址" ]]; then
+                    WEBHOOK_URL="$clipboard_content"
+                else
+                    default_webhook="$clipboard_content"
+                fi
+            else
+                default_webhook="$clipboard_content"
+            fi
+        fi
+    fi
 
-    WEBHOOK_URL=$(get_input "Configuration" "Please enter your Feishu Webhook URL:" "" "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" "Invalid Webhook URL! Must start with https://open.feishu.cn/open-apis/bot/v2/hook/")
-    if [ -z "$WEBHOOK_URL" ]; then log "WARN" "Cancelled by user"; exit 0; fi
+    # Directory Selection
+    INSTALL_DIR=$(get_install_dir "$HOME/code")
+    if [ $? -ne 0 ] || [ -z "$INSTALL_DIR" ]; then log "WARN" "用户已取消"; exit 0; fi
+
+    if [ -z "$WEBHOOK_URL" ]; then
+        WEBHOOK_URL=$(get_input "配置" "请输入您的飞书 Webhook 地址 (已自动尝试读取剪贴板):" "$default_webhook" "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" "Webhook 地址无效！必须以 https://open.feishu.cn/open-apis/bot/v2/hook/ 开头")
+        if [ -z "$WEBHOOK_URL" ]; then log "WARN" "用户已取消"; exit 0; fi
+    fi
     
     # 2. Install
-    show_progress "Installation" "Downloading and installing..." 10
+    show_progress "安装中" "正在下载并安装..." 10
     download_package
-    show_progress "Installation" "Dependencies installed." 50
+    show_progress "安装中" "依赖已安装。" 50
     
     # 3. Configure
     write_config "$WEBHOOK_URL"
-    show_progress "Configuration" "Configuration written." 90
+    show_progress "配置" "配置已写入。" 90
     
     # 4. Finish
-    show_msg "Success" "Installation Complete! \n\nLog saved to: $PWD/$LOG_FILE"
-    log "SUCCESS" "Installation finished successfully."
+    show_msg "成功" "安装完成！ \n\n日志已保存至: $PWD/$LOG_FILE"
+    log "SUCCESS" "安装成功完成。"
 }
 
 main

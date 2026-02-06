@@ -37,35 +37,35 @@ function Get-Input {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = $Title
-    $form.Size = New-Object System.Drawing.Size(400, 200)
+    $form.Size = New-Object System.Drawing.Size(800, 200)
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = "FixedDialog"
     $form.MaximizeBox = $false
 
     $label = New-Object System.Windows.Forms.Label
     $label.Location = New-Object System.Drawing.Point(10, 20)
-    $label.Size = New-Object System.Drawing.Size(360, 20)
+    $label.Size = New-Object System.Drawing.Size(760, 20)
     $label.Text = $Prompt
     $form.Controls.Add($label)
 
     $textBox = New-Object System.Windows.Forms.TextBox
     $textBox.Location = New-Object System.Drawing.Point(10, 50)
-    $textBox.Size = New-Object System.Drawing.Size(360, 20)
+    $textBox.Size = New-Object System.Drawing.Size(760, 20)
     $textBox.Text = $DefaultValue
     $form.Controls.Add($textBox)
 
     $okButton = New-Object System.Windows.Forms.Button
-    $okButton.Location = New-Object System.Drawing.Point(210, 100)
+    $okButton.Location = New-Object System.Drawing.Point(610, 100)
     $okButton.Size = New-Object System.Drawing.Size(75, 23)
-    $okButton.Text = "OK"
+    $okButton.Text = "确定"
     $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
     $form.AcceptButton = $okButton
     $form.Controls.Add($okButton)
 
     $cancelButton = New-Object System.Windows.Forms.Button
-    $cancelButton.Location = New-Object System.Drawing.Point(295, 100)
+    $cancelButton.Location = New-Object System.Drawing.Point(695, 100)
     $cancelButton.Size = New-Object System.Drawing.Size(75, 23)
-    $cancelButton.Text = "Cancel"
+    $cancelButton.Text = "取消"
     $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
     $form.CancelButton = $cancelButton
     $form.Controls.Add($cancelButton)
@@ -81,12 +81,33 @@ function Get-Input {
             if ($inputVal -match $Regex) {
                 return $inputVal
             } else {
-                Show-Message -Title "Error" -Message $ErrorMessage -Icon "Error"
+                Show-Message -Title "错误" -Message $ErrorMessage -Icon "Error"
             }
         } else {
             return $inputVal
         }
     }
+}
+
+function Select-Folder {
+    param([string]$Description)
+    
+    Add-Type -AssemblyName System.Windows.Forms
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = $Description
+    $dialog.ShowNewFolderButton = $true
+    
+    # Try to set initial path to user profile
+    if (Test-Path "$env:USERPROFILE\code") {
+        $dialog.SelectedPath = "$env:USERPROFILE\code"
+    } else {
+        $dialog.SelectedPath = "$env:USERPROFILE"
+    }
+
+    if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        return $dialog.SelectedPath
+    }
+    return $null
 }
 
 # ---------------------------------------------------------
@@ -105,7 +126,7 @@ function Log-Write {
 }
 
 try {
-    Log-Write "Starting installation..."
+    Log-Write "开始安装..."
 
     # Check Dependencies
     $missing = @()
@@ -114,36 +135,55 @@ try {
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { $missing += "npm" }
 
     if ($missing.Count -gt 0) {
-        Show-Message -Title "Missing Dependencies" -Message "Missing tools: $($missing -join ', '). Please install them first." -Icon "Error"
+        Show-Message -Title "缺少依赖" -Message "缺少工具: $($missing -join ', ')。请先安装它们。" -Icon "Error"
         exit 1
     }
 
-    Show-Message -Title "Welcome" -Message "Welcome to Claude Code Notification Setup!"
+    $RepoUrl = "https://github.com/zzpwestlife/claude-code-notification.git"
 
     # Inputs
-    $TargetDir = Get-Input -Title "Configuration" -Prompt "Installation Directory:" -DefaultValue "$env:USERPROFILE\code\claude-code-notification"
+    $TargetDir = Get-Input -Title "配置" -Prompt "安装目录:" -DefaultValue "$env:USERPROFILE\code\claude-code-notification"
     if ([string]::IsNullOrEmpty($TargetDir)) { exit 0 }
 
-    $WebhookUrl = Get-Input -Title "Configuration" -Prompt "Enter Feishu Webhook URL:" -Regex "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" -ErrorMessage "Invalid URL. Must start with https://open.feishu.cn/open-apis/bot/v2/hook/"
-    if ([string]::IsNullOrEmpty($WebhookUrl)) { exit 0 }
+    # Webhook Clipboard Detection
+    $DefaultWebhook = ""
+    try {
+        $Clipboard = Get-Clipboard -Raw -ErrorAction SilentlyContinue
+        if ($Clipboard -match "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$") {
+            $Clipboard = $Clipboard.Trim()
+            $Confirm = [System.Windows.Forms.MessageBox]::Show("检测到剪贴板包含飞书 Webhook 地址：`n`n$Clipboard`n`n是否直接使用？", "配置", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+            if ($Confirm -eq [System.Windows.Forms.DialogResult]::Yes) {
+                $WebhookUrl = $Clipboard
+            } else {
+                $DefaultWebhook = $Clipboard
+            }
+        }
+    } catch {
+        # Ignore clipboard errors
+    }
+
+    if ([string]::IsNullOrEmpty($WebhookUrl)) {
+        $WebhookUrl = Get-Input -Title "配置" -Prompt "请输入飞书 Webhook 地址 (已自动尝试读取剪贴板):" -DefaultValue $DefaultWebhook -Regex "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" -ErrorMessage "无效的 URL。必须以 https://open.feishu.cn/open-apis/bot/v2/hook/ 开头"
+        if ([string]::IsNullOrEmpty($WebhookUrl)) { exit 0 }
+    }
 
     # Installation
     if (-not (Test-Path $TargetDir)) {
-        Log-Write "Cloning repository..."
+        Log-Write "正在克隆仓库..."
         New-Item -ItemType Directory -Force -Path (Split-Path $TargetDir) | Out-Null
         git clone $RepoUrl $TargetDir
     } else {
-        Log-Write "Updating repository..."
+        Log-Write "正在更新仓库..."
         Set-Location $TargetDir
         git pull
     }
 
     Set-Location $TargetDir
-    Log-Write "Installing dependencies..."
+    Log-Write "正在安装依赖..."
     npm install
 
     # Write Config
-    Log-Write "Writing configuration..."
+    Log-Write "正在写入配置..."
     $EnvContent = "FEISHU_WEBHOOK_URL=$WebhookUrl"
     Set-Content -Path "$TargetDir\.env" -Value $EnvContent
 
@@ -188,11 +228,11 @@ try {
     node "$TargetDir\update_settings.js"
     Remove-Item "$TargetDir\update_settings.js"
 
-    Show-Message -Title "Success" -Message "Installation Complete!"
-    Log-Write "Installation successful."
+    Show-Message -Title "成功" -Message "安装完成！"
+    Log-Write "安装成功。"
 
 } catch {
     Log-Write "Error: $_" "ERROR"
-    Show-Message -Title "Error" -Message "Installation failed. Check log for details.`n$_" -Icon "Error"
+    Show-Message -Title "错误" -Message "安装失败。请查看日志了解详情。`n$_" -Icon "Error"
     exit 1
 }
