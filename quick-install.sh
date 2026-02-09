@@ -205,7 +205,7 @@ if [ -f "package.json" ] && grep -q "\"name\": \"claude-code-notification\"" "pa
 else
     DEFAULT_INSTALL_DIR="$HOME/code/claude-code-notification"
 fi
-INSTALL_DIR=""
+# INSTALL_DIR="" # Don't overwrite if set via env
 REPO_URL="https://github.com/zzpwestlife/claude-code-notification.git" # Placeholder, user should replace
 
 download_package() {
@@ -378,9 +378,11 @@ main() {
     fi
 
     # Directory Selection
-    INSTALL_DIR=$(get_install_dir "$HOME/code")
-    if [ $? -ne 0 ] || [ -z "$INSTALL_DIR" ]; then log "WARN" "用户已取消"; exit 0; fi
-
+    if [ -z "$INSTALL_DIR" ]; then
+        INSTALL_DIR=$(get_install_dir "$HOME/code")
+        if [ $? -ne 0 ] || [ -z "$INSTALL_DIR" ]; then log "WARN" "用户已取消"; exit 0; fi
+    fi
+    
     if [ -z "$WEBHOOK_URL" ]; then
         WEBHOOK_URL=$(get_input "配置" "请输入您的飞书 Webhook 地址 (已自动尝试读取剪贴板):" "$default_webhook" "^https://open.feishu.cn/open-apis/bot/v2/hook/.*$" "Webhook 地址无效！必须以 https://open.feishu.cn/open-apis/bot/v2/hook/ 开头")
         if [ -z "$WEBHOOK_URL" ]; then log "WARN" "用户已取消"; exit 0; fi

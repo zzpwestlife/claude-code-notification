@@ -11,19 +11,19 @@ claude-code-notification (Claude Code 任务完成提醒系统) is a notificatio
 ### Layered Design
 
 ```
-notify-system.js (CLI entry point)
+src/index.js (CLI entry point)
     ↓
-NotificationManager (unified interface)
+src/modules/notification/manager.js (NotificationManager)
     ↓
-Feishu Notifier (feishu-notify.js)
+src/modules/feishu/client.js (Feishu Notifier)
 ```
 
 ### Core Components
 
-- **notify-system.js** - Main CLI entry point; parses arguments, detects project name, orchestrates notifications
-- **notification-manager.js** - `NotificationManager` class that initializes and coordinates notification
-- **env-config.js** - Loads configuration from `.env` (highest priority) and `config.json` (fallback)
-- **feishu-notify.js** - Feishu/Lark webhook integration with rich text post format
+- **src/index.js** - Main CLI entry point; parses arguments, detects project name, orchestrates notifications
+- **src/modules/notification/manager.js** - `NotificationManager` class that initializes and coordinates notification
+- **src/shared/config/env.js** - Loads configuration from `.env` (highest priority) and `config.json` (fallback)
+- **src/modules/feishu/client.js** - Feishu/Lark webhook integration with rich text post format
 
 ### Configuration Priority
 
@@ -38,7 +38,7 @@ The system auto-detects project names in this order:
 2. Git repository basename
 3. Current directory basename
 
-This is implemented in `notify-system.js` and passed to notifiers.
+This is implemented in `src/index.js` and passed to notifiers.
 
 ### Notification Format
 
@@ -46,7 +46,7 @@ Feishu uses `msg_type: "post"` with structured content arrays (one array per lin
 
 ### Key Functions
 
-**feishu-notify.js:**
+**src/modules/feishu/client.js:**
 - `notifyTaskCompletion(taskInfo, webhookUrl, projectName, options)` - Main function
 - `options.title` - Custom title (overrides default "项目名: 任务信息")
 - `options.startTime` - Task start time (Date/timestamp/ISO string) for duration calculation
@@ -56,7 +56,7 @@ Feishu uses `msg_type: "post"` with structured content arrays (one array per lin
 
 ### Git Integration
 
-`feishu-notify.js` includes git info in notifications via `getGitInfo()`:
+`feishu-notify.js` (now in modules) includes git info in notifications via `getGitInfo()`:
 - Current branch
 - Latest commit (short hash + message)
 - Author and date
@@ -67,14 +67,11 @@ Feishu uses `msg_type: "post"` with structured content arrays (one array per lin
 
 ```bash
 # Run setup wizard
-node setup-wizard.js
+npm run setup
 
 # Test notification system
-node notify-system.js --message "测试消息"
-node notify-system.js --title "自定义标题" --message "测试消息"
-
-# Test feishu notifier directly
-node feishu-notify.js --message "测试" --status success --description "描述"
+node src/index.js --message "测试消息"
+node src/index.js --title "自定义标题" --message "测试消息"
 
 # Install dependencies
 npm install
@@ -91,7 +88,7 @@ Add to `~/.claude/settings.json`:
       {
         "hooks": [
           {
-            "command": "node /path/to/claude-code-notification/notify-system.js",
+            "command": "node /path/to/claude-code-notification/src/index.js",
             "type": "command"
           }
         ]
@@ -103,7 +100,7 @@ Add to `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "node /path/to/claude-code-notification/notify-system.js --title 'Claude Code' --message '需要权限审批'"
+            "command": "node /path/to/claude-code-notification/src/index.js --title 'Claude Code' --message '需要权限审批'"
           }
         ]
       },
@@ -112,7 +109,7 @@ Add to `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "node /path/to/claude-code-notification/notify-system.js --title 'Claude Code' --message '等待你的输入'"
+            "command": "node /path/to/claude-code-notification/src/index.js --title 'Claude Code' --message '等待你的输入'"
           }
         ]
       }

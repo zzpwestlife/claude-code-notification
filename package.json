@@ -10,9 +10,7 @@
     "start": "bash scripts/dev.sh",
     "setup": "bash scripts/setup.sh",
     "test": "bash scripts/test.sh",
-    "lint": "bash scripts/lint.sh",
-    "clean": "bash scripts/clean.sh",
-    "build": "bash scripts/build.sh"
+    "clean": "bash scripts/clean.sh"
   },
   "keywords": [
     "claude",
