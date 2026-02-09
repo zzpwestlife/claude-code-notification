@@ -40,6 +40,41 @@ curl -sSL https://raw.githubusercontent.com/zzpwestlife/claude-code-notification
 & {Start-Process PowerShell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "quick-install.bat"' -Verb RunAs}
 ```
 
+**支持环境：**
+- **macOS**: 支持 TUI 弹窗 (osascript)，无需额外依赖。
+- **Linux**: 依赖 `whiptail` 或 `dialog` (Ubuntu/Debian 自带或 `apt install whiptail`)。
+- **Windows**: 需要 PowerShell 5.1+ (Windows 10/11 自带)。
+- **Node.js**: 需要 Node.js 14+。
+
+---
+
+### ⚡ 手动安装（备选方式）
+
+下载项目, 从 github 克隆到本地
+
+```bash
+git clone https://github.com/yourusername/claude-code-notification.git
+cd claude-code-notification
+```
+执行安装, npm 安装依赖
+
+```bash
+npm install
+```
+
+运行配置向导
+
+```bash
+npm run setup
+```
+向导会自动帮你配置所有设置，包括安全存储 webhook 地址。
+
+#### 自动化配置说明 🤖
+
+安装脚本会自动处理 Claude Code 的配置文件：
+1.  **`settings.json`**: 标准配置文件，会自动添加通知 hook。
+2.  **`ft-claude.json`** (如果存在): 如果检测到此文件，脚本会将其与 hook 合并，并生成 `ft-settings.json`，确保你在使用特定配置时也能收到通知。
+
 #### 验证配置 ✅
 ```bash
 # 测试完整通知系统

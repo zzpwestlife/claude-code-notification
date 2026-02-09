@@ -26,9 +26,9 @@ class NotificationManager {
             notifiers.feishu = {
                 enabled: true,
                 notifier: new FeishuNotifier(this.config.notification.feishu.webhook_url),
-                send: async (taskInfo, title) => {
+                send: async (taskInfo, title, options = {}) => {
                     const { notifyTaskCompletion } = require('../feishu/client');
-                    return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName, { title });
+                    return await notifyTaskCompletion(taskInfo, this.config.notification.feishu.webhook_url, this.projectName, { title, ...options });
                 }
             };
         }
@@ -39,7 +39,7 @@ class NotificationManager {
     /**
      * 发送所有启用的通知
      */
-    async sendAllNotifications(taskInfo, title = null) {
+    async sendAllNotifications(taskInfo, title = null, options = {}) {
         const notifications = [];
         const results = [];
 
@@ -47,7 +47,7 @@ class NotificationManager {
         for (const [type, notifierConfig] of Object.entries(this.notifiers)) {
             if (notifierConfig.enabled) {
                 notifications.push(
-                    this.sendSingleNotification(type, notifierConfig, taskInfo, title)
+                    this.sendSingleNotification(type, notifierConfig, taskInfo, title, options)
                 );
             }
         }
@@ -64,9 +64,9 @@ class NotificationManager {
     /**
      * 发送单个通知
      */
-    async sendSingleNotification(type, notifierConfig, taskInfo, title) {
+    async sendSingleNotification(type, notifierConfig, taskInfo, title, options = {}) {
         try {
-            const success = await notifierConfig.send(taskInfo, title);
+            const success = await notifierConfig.send(taskInfo, title, options);
             const typeName = this.getTypeName(type);
             console.log(success ? `✅ ${typeName}发送成功` : `❌ ${typeName}发送失败`);
             return { type, success };

@@ -1,0 +1,4 @@
+{
+  "url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN",
+  "note": "Rename this file to webhook.json and replace the URL with your IM bot webhook (Slack/DingTalk/Lark/WeChat)"
+}

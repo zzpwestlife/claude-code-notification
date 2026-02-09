@@ -24,10 +24,11 @@ class EnvConfig {
             const rootDir = path.resolve(__dirname, '../../../');
             
             // 定义可能的配置文件路径（按优先级排序）
+            // 优先级：.env (本地覆盖) > config/.env.${NODE_ENV} (环境特定) > config/.env (通用)
             const envFiles = [
+                path.join(rootDir, '.env'),                    // .env (根目录，最高优先级)
                 path.join(rootDir, `config/.env.${nodeEnv}`), // config/.env.dev|prod|staging
-                path.join(rootDir, 'config/.env'),            // config/.env
-                path.join(rootDir, '.env')                    // .env (根目录，兼容旧版)
+                path.join(rootDir, 'config/.env')             // config/.env
             ];
 
             let loaded = false;

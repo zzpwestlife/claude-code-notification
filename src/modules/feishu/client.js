@@ -15,20 +15,32 @@ const os = require('os');
  * @returns {Object} Git信息对象
  */
 function getGitInfo() {
+    // Helper to safely execute git commands
+    const safeExec = (cmd) => {
+        try {
+            return execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+        } catch (e) {
+            return '';
+        }
+    };
+
     try {
-        const gitRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
-        const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-        const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-        const commitMessage = execSync('git log -1 --pretty=%s', { encoding: 'utf-8' }).trim();
-        const commitAuthor = execSync('git log -1 --pretty=%an', { encoding: 'utf-8' }).trim();
-        const commitTime = execSync('git log -1 --pretty=%ci', { encoding: 'utf-8' }).trim().split(' ')[0];
+        const gitRoot = safeExec('git rev-parse --show-toplevel');
+        if (!gitRoot) return null;
+
+        const branch = safeExec('git rev-parse --abbrev-ref HEAD') || 'HEAD';
+        const commitHash = safeExec('git rev-parse --short HEAD') || 'Unknown';
+        const commitMessage = safeExec('git log -1 --pretty=%s') || 'No commits';
+        const commitAuthor = safeExec('git log -1 --pretty=%an') || 'Unknown';
+        const commitTimeRaw = safeExec('git log -1 --pretty=%ci');
+        const commitTime = commitTimeRaw ? commitTimeRaw.split(' ')[0] : new Date().toISOString().split('T')[0];
 
         // 检查是否有未提交的更改
         let status = '';
         try {
-            const statusOutput = execSync('git status --porcelain', { encoding: 'utf-8' });
-            if (statusOutput.trim()) {
-                const lines = statusOutput.trim().split('\n');
+            const statusOutput = safeExec('git status --porcelain');
+            if (statusOutput) {
+                const lines = statusOutput.split('\n');
                 const modified = lines.filter(l => l.match(/^ M/)).length;
                 const added = lines.filter(l => l.match(/^\?\?/)).length;
                 const staged = lines.filter(l => l.match(/^M/)).length;
@@ -46,8 +58,8 @@ function getGitInfo() {
         // 检查是否有未推送的提交
         let unpushed = '';
         try {
-            const unpushedCount = execSync(`git log @{u}..HEAD --oneline | wc -l`, { encoding: 'utf-8' }).trim();
-            if (parseInt(unpushedCount) > 0) {
+            const unpushedCount = safeExec(`git log @{u}..HEAD --oneline | wc -l`);
+            if (unpushedCount && parseInt(unpushedCount) > 0) {
                 unpushed = `有 ${unpushedCount} 个未推送提交`;
             }
         } catch (e) {
@@ -279,16 +291,17 @@ class FeishuNotifier {
 function formatDuration(milliseconds) {
     if (!milliseconds || milliseconds < 0) return '未知';
 
-    const seconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
+    const totalSeconds = milliseconds / 1000;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
 
     if (hours > 0) {
-        return `${hours}小时${minutes % 60}分${seconds % 60}秒`;
+        return `${hours}小时${minutes}分${seconds.toFixed(2)}秒`;
     } else if (minutes > 0) {
-        return `${minutes}分${seconds % 60}秒`;
+        return `${minutes}分${seconds.toFixed(2)}秒`;
     } else {
-        return `${seconds}秒`;
+        return `${seconds.toFixed(2)}秒`;
     }
 }
 

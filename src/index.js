@@ -3,6 +3,7 @@
  * 仅支持飞书推送
  */
 
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const { envConfig } = require('./shared/config/env');
@@ -16,6 +17,32 @@ class NotificationSystem {
         this.config = this.loadConfig();
         this.projectName = this.getProjectName();
         this.notificationManager = new NotificationManager(this.config, this.projectName);
+    }
+
+    /**
+     * 加载基准测试数据 (开始时间和Prompt)
+     */
+    loadBenchData() {
+        try {
+            const homeDir = os.homedir();
+            const benchStartFile = path.join(homeDir, '.claude', 'bench', 'bench_start.json');
+            
+            if (fs.existsSync(benchStartFile)) {
+                const data = JSON.parse(fs.readFileSync(benchStartFile, 'utf8'));
+                // Python time.time() is in seconds, convert to ms
+                const startTime = data.timestamp ? data.timestamp * 1000 : null;
+                const prompt = data.prompt || null;
+                
+                console.log(`⏱️  检测到任务开始时间: ${new Date(startTime).toLocaleString()}`);
+                if (prompt) console.log(`📝 检测到Prompt: ${prompt.substring(0, 50)}...`);
+                
+                return { startTime, prompt };
+            }
+        } catch (error) {
+            // Ignore errors, bench data is optional
+            console.log('⚠️  读取基准测试数据失败:', error.message);
+        }
+        return {};
     }
 
     /**
@@ -101,8 +128,15 @@ class NotificationSystem {
         console.log(`📁 项目名称：${this.projectName}`);
         console.log(`📝 任务信息：${taskInfo}`);
 
+        // 加载基准测试数据
+        const benchData = this.loadBenchData();
+        const options = {
+            startTime: benchData.startTime,
+            prompt: benchData.prompt
+        };
+
         // 发送所有通知
-        const results = await this.notificationManager.sendAllNotifications(taskInfo, title);
+        const results = await this.notificationManager.sendAllNotifications(taskInfo, title, options);
 
         // 打印结果汇总
         this.notificationManager.printNotificationSummary(results);
