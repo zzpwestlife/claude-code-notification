@@ -392,7 +392,7 @@ main() {
     show_progress "安装中" "依赖已安装。" 50
     
     # 3. Configure
-    write_config "$WEBHOOK_URL"
+    write_config "$WEBHOOK_URL" "$SECRET"
     
     # 3.5 Install Bench Tools
     log "INFO" "Installing Claude Bench tools..."
